@@ -27,6 +27,10 @@ const extendConf = function(api, conf) {
     }
   }
 
+  if(api.prompts.env_directory) {
+    envName = `${api.prompts.env_directory}/${envName}`
+  }
+
   // see if there is anything to do
   if (envName === void 0 || envName === "") {
     return;
@@ -39,6 +43,8 @@ const extendConf = function(api, conf) {
   if (!fs.existsSync(envPath)) {
     console.log(`App Extension (dotenv): '${envName}' file missing; skipping`);
     return;
+  } else {
+    console.log(`App Extension (dotenv): using '${envName}'`);
   }
 
   // dotenv options
@@ -92,3 +98,4 @@ module.exports = function(api) {
     extendConf(api, conf);
   });
 };
+
