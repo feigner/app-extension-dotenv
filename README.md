@@ -12,6 +12,8 @@ TARGET=prod quasar dev   # start dev server using `prod.env`
 
 Invoking a quasar command without specifying a `TARGET` reverts to default behavior, using the appropriate `NODE_ENV` env file.
 
+Additionally, our fork allows for overriding values set via .env files via command-line args. eg: `FOO=false TARGER=dev quasar develop` sets `process.env.FOO` to false, even if .env specifies `FOO=true`
+
 # Install
 
 ```bash

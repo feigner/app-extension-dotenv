@@ -6,10 +6,13 @@
  * API: https://github.com/quasarframework/quasar/blob/master/app/lib/app-extension/IndexAPI.js
  */
 
-const fs = require("fs");
+const fs = require('fs')
+const semver = require('semver')
+// https://github.com/niftylettuce/dotenv-parse-variables
+const dotenvParseVariables = require('dotenv-parse-variables')
 
-const extendConf = function(api, conf) {
-  let envName = ".env"; // default name
+const extendConf = function (api, conf) {
+  let envName = '.env' // default name
 
   // look for a specified target
   if (process.env.TARGET) {
@@ -32,12 +35,12 @@ const extendConf = function(api, conf) {
   }
 
   // see if there is anything to do
-  if (envName === void 0 || envName === "") {
-    return;
+  if (envName === void 0 || envName === '') {
+    return
   }
 
   // resolve the path to the file
-  const envPath = api.resolve.app(envName);
+  const envPath = api.resolve.app(envName)
 
   // check file exists
   if (!fs.existsSync(envPath)) {
@@ -49,12 +52,12 @@ const extendConf = function(api, conf) {
 
   // dotenv options
   const envOptions = {
-    encoding: "utf8",
+    encoding: 'utf8',
     path: envPath
   };
 
-  const { config } = require("dotenv");
-  const result = config(envOptions);
+  const { config } = require('dotenv')
+  const result = config(envOptions)
 
   // check for dotenv error
   if (result.error) {
@@ -62,40 +65,42 @@ const extendConf = function(api, conf) {
     process.exit(1);
   }
 
+  const version = api.getPackageVersion('@quasar/app')
+  const v1 = semver.lt(version, '2.0.0')
+
   // get parsed data
-  const parsed = result.parsed;
+  const parsed = dotenvParseVariables(result.parsed)
 
   // for brevity
   let target = conf.build.env;
 
   // check for common root object
-  if (
-    api.prompts.common_root_object &&
-    api.prompts.common_root_object !== "none"
-  ) {
-    let rootObject = api.prompts.common_root_object;
+  if (api.prompts.common_root_object && api.prompts.common_root_object !== 'none') {
+    let rootObject = api.prompts.common_root_object
 
     if (!target[rootObject]) {
-      target[rootObject] = {};
-      target = target[rootObject];
+      target[rootObject] = {}
+      target = target[rootObject]
     }
   }
 
   for (const key in parsed) {
-    target[key] = JSON.stringify(parsed[key]);
+    // allow for overriding contents of .env file with command-line args
+    // eg: `FOO=false yarn develop` sets `process.env.FOO` to false, even if .env specifies `true`
+    let parsedKey = process.env[key] ? process.env[key] : parsed[key];
+    target[key] = v1 === true ? JSON.stringify(parsedKey) : parsedKey;
   }
-};
+}
 
-module.exports = function(api) {
+module.exports = function (api) {
   // Quasar compatibility check; you may need
   // hard dependencies, as in a minimum version of the "quasar"
   // package or a minimum version of "@quasar/app" CLI
-  api.compatibleWith("quasar", "^1.1.1");
-  api.compatibleWith("@quasar/app", "^1.1.0");
+  // api.compatibleWith('quasar', '^1.1.1')
+  api.compatibleWith('@quasar/app', '^1.1.0 || ^2.0.0')
 
   // We extend /quasar.conf.js
-  api.extendQuasarConf(conf => {
-    extendConf(api, conf);
-  });
-};
-
+  api.extendQuasarConf((conf) => {
+    extendConf(api, conf)
+  })
+}
